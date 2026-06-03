@@ -310,12 +310,20 @@ class GameApp:
         self.running = True
         self.result_text = ""
         
+        # Sounds
+        pyg.mixer.init()
+        self.sfx_ushirabi = pyg.mixer.Sound("Audio n Sound Effect/USHIRABI.mp3")
+        self.sfx_granit = pyg.mixer.Sound("Audio n Sound Effect/Granit Blash.mp3")
+        
         # Entities
         self.player = MainCharacter(self.width//4, GROUND_Y - 40)
         self.enemy = None
         self.clash_timer = 0
         self.clash_countdown = 0
         self.enemy_choice = -1
+        self.clash_player_label = -1
+        self.clash_enemy_label = -1
+        self.clash_sound_played = False
 
     def reset_battle(self):
         self.player = MainCharacter(self.width//4, GROUND_Y - 40)
@@ -355,46 +363,81 @@ class GameApp:
                     self.running = False
 
     def update_clash(self, dt, fitur):
-        self.clash_countdown -= dt
-        if self.clash_countdown <= 0:
-            player_label = int(fitur["Rl"])
-            enemy_label = self.enemy_choice
-            
-            damage_p = 0
-            damage_e = 0
-            
-            if player_label == -1:
-                damage_p = 10
+        if self.clash_countdown > 0:
+            self.clash_countdown -= dt
+            if self.clash_countdown <= 0:
+                # Kunci label pas detik 0
+                self.clash_player_label = int(fitur["Rl"])
+                self.clash_enemy_label = self.enemy_choice
+                
+                print(f"[DEBUG] Clash Triggered! Player: {self.clash_player_label} vs Boss: {self.clash_enemy_label}")
+                
+                # Trigger Sound (Paralel)
+                # Sekarang Label 1 juga pake OR (salah satu pilih 1, bunyi)
+                if self.clash_player_label == 1 or self.clash_enemy_label == 1:
+                    self.sfx_ushirabi.play()
+                
+                if self.clash_player_label == 3 or self.clash_enemy_label == 3:
+                    self.sfx_granit.play()
+                
+                self.clash_sound_played = True
+                # Kasih waktu dikit buat mixer mulai muter
+                pyg.time.delay(100) 
+            return
+
+        # Tunggu SFX Selesai (Freeze Logic)
+        # Kita cek apakah channel yang muter sound ini masih aktif
+        if self.sfx_ushirabi.get_num_channels() > 0 or self.sfx_granit.get_num_channels() > 0:
+            return
+
+        # Setelah Audio Beres, Baru Proses Damage
+        player_label = self.clash_player_label
+        enemy_label = self.clash_enemy_label
+        
+        damage_p = 0
+        damage_e = 0
+        
+        if player_label == -1:
+            # Player tidak terdeteksi pose-nya
+            damage_p = 15 
+            print("[DEBUG] Player pose not detected! Penalty applied.")
+        elif player_label == enemy_label:
+            # Draw / Seri
+            print(f"[DEBUG] Draw! Both chose {player_label}. No damage.")
+        else:
+            # Logic Clash Utama
+            # 0 > 4, 5 > 0, 1 > 2, 2 > 3, 3 > 1
+            if (player_label == 0 and enemy_label == 4) or \
+               (player_label == 5 and enemy_label == 0) or \
+               (player_label == 1 and enemy_label == 2) or \
+               (player_label == 2 and enemy_label == 3) or \
+               (player_label == 3 and enemy_label == 1) or \
+               (player_label == 4 and enemy_label in [1, 2, 3]):
+                damage_e = 25
+                print(f"[DEBUG] Player Wins Clash! Damage to Boss: {damage_e}")
             else:
-                # Logic Clash
-                if player_label == 0 and enemy_label == 4: damage_e = 30
-                elif enemy_label == 0 and player_label == 4: damage_p = 30
-                elif player_label == 5 and enemy_label == 0: damage_e = 25
-                elif enemy_label == 5 and player_label == 0: damage_p = 25
-                elif player_label == 5 or enemy_label == 5: pass 
-                elif (player_label == 1 and enemy_label == 2) or \
-                     (player_label == 2 and enemy_label == 3) or \
-                     (player_label == 3 and enemy_label == 1): damage_e = 20
-                elif (enemy_label == 1 and player_label == 2) or \
-                     (enemy_label == 2 and player_label == 3) or \
-                     (enemy_label == 3 and player_label == 1): damage_p = 20
-                elif player_label == 4 and enemy_label in [1, 2, 3]: damage_e = 25
-                elif enemy_label == 4 and player_label in [1, 2, 3]: damage_p = 25
-            
-            self.player.hp -= damage_p
-            self.enemy.hp -= damage_e
-            
-            if self.player.hp <= 0:
-                self.state = 'END'
-                self.result_text = f"KALAH ADU! (Anda:{player_label}, Musuh:{enemy_label})"
-            elif self.enemy.hp <= 0:
-                self.state = 'END'
-                self.result_text = f"MENANG ADU! (Anda:{player_label}, Musuh:{enemy_label})"
-            else:
-                self.state = 'PLAYING'
-                self.clash_timer = float(random.randint(5, 15))
-                try: cv2.destroyWindow("Adu Pose!")
-                except: pass
+                # Kebalikannya, Boss yang menang
+                damage_p = 20
+                print(f"[DEBUG] Boss Wins Clash! Damage to Player: {damage_p}")
+        
+        # Eksekusi pengurangan darah
+        self.player.hp -= damage_p
+        self.enemy.hp -= damage_e
+        
+        self.clash_sound_played = False 
+
+        # Cek Kondisi Menang/Kalah
+        if self.player.hp <= 0:
+            self.state = 'END'
+            self.result_text = f"KALAH ADU! (Anda:{player_label}, Musuh:{enemy_label})"
+        elif self.enemy.hp <= 0:
+            self.state = 'END'
+            self.result_text = f"MENANG ADU! (Anda:{player_label}, Musuh:{enemy_label})"
+        else:
+            self.state = 'PLAYING'
+            self.clash_timer = float(random.randint(5, 15))
+            try: cv2.destroyWindow("Adu Pose!")
+            except: pass
 
     def run(self):
         while self.running:

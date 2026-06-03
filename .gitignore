@@ -1,0 +1,56 @@
+# Dataset folders
+0/
+1/
+2/
+3/
+4/
+
+# Audio and Sound Effects
+Audio n Sound Effect/
+
+# Sprite and Graphics
+Frost_Guardian_FREE_v1.0/
+
+# Compiled Application and builds
+HandPoseApp/
+
+# ML Model
+model.h5
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
