@@ -314,6 +314,8 @@ class GameApp:
         pyg.mixer.init()
         self.sfx_ushirabi = pyg.mixer.Sound("Audio n Sound Effect/USHIRABI.mp3")
         self.sfx_granit = pyg.mixer.Sound("Audio n Sound Effect/Granit Blash.mp3")
+        self.sfx_fukuma = pyg.mixer.Sound("Audio n Sound Effect/Fukuma Mushi.mp3")
+        self.sfx_muryo = pyg.mixer.Sound("Audio n Sound Effect/Muryo Kuso.mp3")
         
         # Entities
         self.player = MainCharacter(self.width//4, GROUND_Y - 40)
@@ -376,18 +378,27 @@ class GameApp:
                 # Sekarang Label 1 juga pake OR (salah satu pilih 1, bunyi)
                 if self.clash_player_label == 1 or self.clash_enemy_label == 1:
                     self.sfx_ushirabi.play()
-                
+
                 if self.clash_player_label == 3 or self.clash_enemy_label == 3:
                     self.sfx_granit.play()
-                
+
+                if self.clash_player_label == 0 or self.clash_enemy_label == 0:
+                    self.sfx_fukuma.play()
+
+                if self.clash_player_label == 2 or self.clash_enemy_label == 2:
+                    self.sfx_muryo.play()
+
                 self.clash_sound_played = True
                 # Kasih waktu dikit buat mixer mulai muter
-                pyg.time.delay(100) 
+                pyg.time.delay(100)
             return
 
         # Tunggu SFX Selesai (Freeze Logic)
         # Kita cek apakah channel yang muter sound ini masih aktif
-        if self.sfx_ushirabi.get_num_channels() > 0 or self.sfx_granit.get_num_channels() > 0:
+        if self.sfx_ushirabi.get_num_channels() > 0 or \
+           self.sfx_granit.get_num_channels() > 0 or \
+           self.sfx_fukuma.get_num_channels() > 0 or \
+           self.sfx_muryo.get_num_channels() > 0:
             return
 
         # Setelah Audio Beres, Baru Proses Damage
